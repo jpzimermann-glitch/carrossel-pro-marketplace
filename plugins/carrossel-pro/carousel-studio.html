@@ -552,6 +552,7 @@ function buildSlide(s, idx, total){
   e.className='slide'+(s.breather?' breather':'')+(hasBg?' has-bg':'');
   e.style.width=W+'px';e.style.height=H+'px';
   if(s.bgColor)e.style.backgroundColor=s.bgColor;
+  if(s.bgFx && !hasBg){ const fx=bgFxStyle(s); if(fx) e.style.backgroundImage=fx; }
   e.innerHTML=slideInner(s,idx,total);
   applyBg(e,s,idx,total);
   styleSlide(e,s);
@@ -803,6 +804,23 @@ function overlayGradient(style){
   }
 }
 const OVERLAY_OPTS=[['none','Nenhum'],['base','Base'],['topo','Topo escuro'],['baixo','Base escura'],['vinheta','Vinheta'],['solido','Sólido']];
+/* ===== Efeitos de fundo com a cor de acento (gradiente / brilho) ===== */
+const BGFX_OPTS=[['none','Sólido (normal)'],['gradiente','Gradiente'],['gradiente-forte','Gradiente forte'],['spotlight','Brilho / spotlight']];
+function _hexA(hex,a){
+  hex=String(hex||'#000000').replace('#','');
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16)||0,g=parseInt(hex.slice(2,4),16)||0,b=parseInt(hex.slice(4,6),16)||0;
+  return 'rgba('+r+','+g+','+b+','+a+')';
+}
+function bgFxStyle(s){
+  const a=(data.paleta&&data.paleta.accent)||'#BE4D2E';
+  switch(s.bgFx){
+    case 'gradiente':       return 'linear-gradient(160deg,'+_hexA(a,.22)+' 0%,'+_hexA(a,0)+' 60%)';
+    case 'gradiente-forte': return 'linear-gradient(160deg,'+_hexA(a,.55)+' 0%,'+_hexA(a,0)+' 75%)';
+    case 'spotlight':       return 'radial-gradient(circle at 26% 18%,'+_hexA(a,.30)+' 0%,'+_hexA(a,0)+' 48%)';
+    default: return '';
+  }
+}
 function svgPatternURI(svg){return 'url("data:image/svg+xml;utf8,'+encodeURIComponent(svg)+'")';}
 function patternStyle(name){
   // SVG (em vez de CSS-gradient) p/ exportar certo no html2canvas
@@ -888,6 +906,8 @@ function fundoPanel(insp,s){
   const rm=el('button','btn','<svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>Usar cor da paleta');rm.style.marginTop='8px';rm.onclick=()=>{delete s.bgColor;renderMain();renderRail();renderInspector();};box.appendChild(rm);
   box.appendChild(glabel('Padrão sobre o fundo'));
   box.appendChild(selOf(PATTERN_OPTS,s.pattern||'none',v=>{s.pattern=v==='none'?undefined:v;renderMain();renderRail();}));
+  box.appendChild(glabel('Efeito de fundo (cor de acento)'));
+  box.appendChild(selOf(BGFX_OPTS,s.bgFx||'none',v=>{s.bgFx=v==='none'?undefined:v;renderMain();renderRail();}));
 }
 function globalStylePanel(insp){
   const g=ensureGlobal();
