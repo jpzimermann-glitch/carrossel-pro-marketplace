@@ -243,6 +243,7 @@ input[type=range]{width:100%;accent-color:#6C5CE7;height:18px;cursor:pointer;}
     <button class="btn" id="importBtn"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Importar JSON</button>
     <input type="file" id="fileIn" accept="application/json,.json" style="display:none">
     <button class="btn" id="exportJsonBtn"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>Salvar JSON</button>
+    <button class="btn" id="presetBtn" title="Aplicar um estilo pronto (fonte + cores) com um clique"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"/></svg>Estilos</button>
     <span class="sep"></span>
     <span class="swatch">Acento <input type="color" id="cAccent"></span>
     <span class="swatch">Fundo <input type="color" id="cBg"></span>
@@ -309,6 +310,19 @@ input[type=range]{width:100%;accent-color:#6C5CE7;height:18px;cursor:pointer;}
       <span class="grow"></span>
       <button class="btn ghostbtn" id="aiCancel">Cancelar</button>
       <button class="btn accent" id="aiGo"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/></svg><span id="aiGoLabel">Gerar capa</span></button>
+    </div>
+  </div>
+</div>
+<div class="modal-back" id="presetModal">
+  <div class="modal">
+    <div class="modal-head">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"/></svg>
+      <h2>Estilos prontos</h2>
+      <button class="x" id="presetClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="hint" style="margin-bottom:14px">Clique num estilo para aplicar fonte + cores em todo o carrossel. Você pode ajustar tudo depois.</div>
+      <div id="presetGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
     </div>
   </div>
 </div>
@@ -1254,6 +1268,51 @@ document.getElementById('aiModelPick').querySelectorAll('button').forEach(b=>{b.
   elx.addEventListener('drop',e=>{e.preventDefault();elx.classList.remove('over');aiReadInto(c[0],e.dataTransfer.files[0]);});});
 
 /* ===== Recomeçar do template ===== */
+/* ===== Estilos prontos (presets: kit de fonte + paleta) ===== */
+const PRESETS = [
+  {id:'editorial-terra', nome:'Editorial Terra', kit:'editorial',
+   paleta:{bg:'#E9E1D2',fg:'#1B1714',muted:'#6E6357',accent:'#BE4D2E',surface:'#1B1714',cream:'#F7F2E8'}},
+  {id:'clean-azul', nome:'Clean Azul', kit:'clean-sans',
+   paleta:{bg:'#F4F6F9',fg:'#15233B',muted:'#5B6B82',accent:'#2D6CDF',surface:'#15233B',cream:'#FFFFFF'}},
+  {id:'noite-neon', nome:'Noite Neon', kit:'tech',
+   paleta:{bg:'#0E1116',fg:'#EAF2F0',muted:'#8A97A0',accent:'#34E0A1',surface:'#0A0D11',cream:'#1A2026'}},
+  {id:'luxo-dourado', nome:'Luxo Dourado', kit:'serif-classic',
+   paleta:{bg:'#14110D',fg:'#F3E9D2',muted:'#A8987A',accent:'#C9A24B',surface:'#0F0C08',cream:'#1E1913'}},
+  {id:'brutalist-pb', nome:'Brutalist P&B', kit:'brutalist',
+   paleta:{bg:'#FFFFFF',fg:'#0A0A0A',muted:'#555555',accent:'#E5322B',surface:'#0A0A0A',cream:'#F2F2F2'}},
+  {id:'warm-pessego', nome:'Warm Pêssego', kit:'warm',
+   paleta:{bg:'#FBEADF',fg:'#3A241B',muted:'#8A6552',accent:'#E2674A',surface:'#3A241B',cream:'#FFF6EF'}}
+];
+function applyPreset(p){
+  data.kit = p.kit;
+  data.paleta = Object.assign({}, data.paleta, p.paleta);
+  renderAll();
+  saveSoon();
+  toast('Estilo aplicado: '+p.nome);
+}
+function renderPresetGrid(){
+  const g=document.getElementById('presetGrid'); if(!g) return;
+  g.innerHTML='';
+  PRESETS.forEach(p=>{
+    const on = (data.kit===p.kit && (data.paleta&&data.paleta.accent)===p.paleta.accent);
+    const card=document.createElement('button');
+    card.type='button';
+    card.style.cssText='display:flex;align-items:center;gap:11px;background:#1b1b22;border:1px solid '+(on?'#6C5CE7':'#34343f')+';border-radius:11px;padding:11px;cursor:pointer;text-align:left;color:#e7e7ee;';
+    card.innerHTML='<span style="position:relative;width:42px;height:42px;border-radius:9px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:'+p.paleta.bg+';overflow:hidden">'
+      +'<span style="position:absolute;left:6px;bottom:6px;width:14px;height:14px;border-radius:50%;background:'+p.paleta.accent+'"></span>'
+      +'<span style="position:absolute;right:6px;top:6px;font-family:serif;font-weight:800;font-size:15px;color:'+p.paleta.fg+'">Aa</span></span>'
+      +'<span><b style="display:block;font-size:13px">'+p.nome+'</b>'
+      +'<span style="font-size:11px;opacity:.6">'+p.kit+'</span></span>';
+    card.onclick=()=>{ applyPreset(p); renderPresetGrid(); };
+    g.appendChild(card);
+  });
+}
+function openPresetModal(){ renderPresetGrid(); document.getElementById('presetModal').classList.add('show'); }
+function closePresetModal(){ document.getElementById('presetModal').classList.remove('show'); }
+document.getElementById('presetBtn').onclick=openPresetModal;
+document.getElementById('presetClose').onclick=closePresetModal;
+document.getElementById('presetModal').addEventListener('click',e=>{if(e.target.id==='presetModal')closePresetModal();});
+
 document.getElementById('resetBtn').onclick=()=>{
   if(!confirm('Recomeçar do template? Isto apaga a sessão salva neste navegador. JSONs já exportados não são afetados.'))return;
   idbDel(SK).catch(()=>{}).then(()=>{
