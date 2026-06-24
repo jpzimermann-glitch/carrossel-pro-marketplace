@@ -243,6 +243,7 @@ input[type=range]{width:100%;accent-color:#6C5CE7;height:18px;cursor:pointer;}
     <button class="btn" id="importBtn"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Importar JSON</button>
     <input type="file" id="fileIn" accept="application/json,.json" style="display:none">
     <button class="btn" id="exportJsonBtn"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>Salvar JSON</button>
+    <button class="btn" id="modeloBtn" title="Começar de um modelo pronto (carrossel completo)"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>Modelos</button>
     <button class="btn" id="presetBtn" title="Aplicar um estilo pronto (fonte + cores) com um clique"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4L12 17l-6.3 4.4L8 14 2 9.4h7.6z"/></svg>Estilos</button>
     <span class="sep"></span>
     <span class="swatch">Acento <input type="color" id="cAccent"></span>
@@ -313,6 +314,19 @@ input[type=range]{width:100%;accent-color:#6C5CE7;height:18px;cursor:pointer;}
       <span class="grow"></span>
       <button class="btn ghostbtn" id="aiCancel">Cancelar</button>
       <button class="btn accent" id="aiGo"><svg class="uimi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/></svg><span id="aiGoLabel">Gerar capa</span></button>
+    </div>
+  </div>
+</div>
+<div class="modal-back" id="modeloModal">
+  <div class="modal">
+    <div class="modal-head">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6C5CE7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+      <h2>Modelos prontos</h2>
+      <button class="x" id="modeloClose">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="hint" style="margin-bottom:14px">Escolha um modelo de carrossel completo pra começar. Ele substitui os slides atuais (dá pra desfazer com <b style="color:#9a8fe8">Ctrl+Z</b>). Depois é só trocar os textos.</div>
+      <div id="modeloGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
     </div>
   </div>
 </div>
@@ -1444,6 +1458,97 @@ document.getElementById('presetBtn').onclick=openPresetModal;
 document.getElementById('presetClose').onclick=closePresetModal;
 document.getElementById('presetSave').onclick=saveCurrentStyle;
 document.getElementById('presetModal').addEventListener('click',e=>{if(e.target.id==='presetModal')closePresetModal();});
+
+/* ===== Biblioteca de modelos (carrosseis completos prontos) ===== */
+const _PAL={
+  azul:{bg:'#F4F6F9',fg:'#15233B',muted:'#5B6B82',accent:'#2D6CDF',surface:'#15233B',cream:'#FFFFFF'},
+  terra:{bg:'#E9E1D2',fg:'#1B1714',muted:'#6E6357',accent:'#BE4D2E',surface:'#1B1714',cream:'#F7F2E8'},
+  neon:{bg:'#0E1116',fg:'#EAF2F0',muted:'#8A97A0',accent:'#34E0A1',surface:'#0A0D11',cream:'#1A2026'},
+  ouro:{bg:'#14110D',fg:'#F3E9D2',muted:'#A8987A',accent:'#C9A24B',surface:'#0F0C08',cream:'#1E1913'},
+  preto:{bg:'#0B0B0C',fg:'#F4F1EA',muted:'#9A958C',accent:'#D9B36A',surface:'#000000',cream:'#17171A'},
+  rosa:{bg:'#FCEFF3',fg:'#3A1726',muted:'#8C5C70',accent:'#E0457B',surface:'#3A1726',cream:'#FFF7FA'}
+};
+const MODELOS=[
+  {id:'5-dicas', nome:'5 Dicas Rápidas', desc:'Lista de dicas práticas — ótimo pra educar e engajar.', kit:'clean-sans', paleta:_PAL.azul, formato:'4:5', slides:[
+    {tipo:'capa',ghost:'01',kicker:'GUIA RÁPIDO',titulo:'5 dicas pra [seu tema]',sub:'O que ninguém te conta — e faz toda a diferença.'},
+    {tipo:'passo',ghost:'01',titulo:'Dica 1: [título curto]',corpo:'Explique a dica em 1 ou 2 frases. Seja direto e prático.'},
+    {tipo:'passo',ghost:'02',titulo:'Dica 2: [título curto]',corpo:'Explique a dica em 1 ou 2 frases. Seja direto e prático.'},
+    {tipo:'passo',ghost:'03',titulo:'Dica 3: [título curto]',corpo:'Explique a dica em 1 ou 2 frases. Seja direto e prático.'},
+    {tipo:'passo',ghost:'04',titulo:'Dica 4: [título curto]',corpo:'Explique a dica em 1 ou 2 frases. Seja direto e prático.'},
+    {tipo:'passo',ghost:'05',titulo:'Dica 5: [título curto]',corpo:'Explique a dica em 1 ou 2 frases. Seja direto e prático.'},
+    {tipo:'cta',titulo:'Curtiu? Salva esse post.',sub:'E me segue pra mais conteúdo assim.',acao:'Salvar agora'}
+  ]},
+  {id:'mitos-verdades', nome:'Mitos x Verdades', desc:'Quebra de objeções: derruba mitos do seu nicho.', kit:'editorial', paleta:_PAL.terra, formato:'4:5', slides:[
+    {tipo:'capa',ghost:'!',kicker:'VERDADE SEJA DITA',titulo:'3 mitos sobre [seu tema]',sub:'E o que realmente funciona.'},
+    {tipo:'insight',texto:'"[Escreva aqui o mito 1 que as pessoas acreditam]"',fonte:'MITO'},
+    {tipo:'passo',ghost:'01',titulo:'A verdade',corpo:'Explique por que isso é mito e o que é o certo.'},
+    {tipo:'insight',texto:'"[Escreva aqui o mito 2 que as pessoas acreditam]"',fonte:'MITO'},
+    {tipo:'passo',ghost:'02',titulo:'A verdade',corpo:'Explique por que isso é mito e o que é o certo.'},
+    {tipo:'cta',titulo:'Compartilha com quem precisa saber.',sub:'Me segue pra mais verdades sobre o tema.',acao:'Seguir'}
+  ]},
+  {id:'tutorial', nome:'Tutorial Passo a Passo', desc:'Ensina um processo do começo ao fim.', kit:'tech', paleta:_PAL.neon, formato:'4:5', slides:[
+    {tipo:'capa',ghost:'01',kicker:'PASSO A PASSO',titulo:'Como [fazer algo] em [N] passos',sub:'Tutorial simples, do zero ao resultado.'},
+    {tipo:'passo',ghost:'01',titulo:'Passo 1: [ação]',corpo:'Descreva o que fazer neste passo, de forma clara.'},
+    {tipo:'passo',ghost:'02',titulo:'Passo 2: [ação]',corpo:'Descreva o que fazer neste passo, de forma clara.'},
+    {tipo:'passo',ghost:'03',titulo:'Passo 3: [ação]',corpo:'Descreva o que fazer neste passo, de forma clara.'},
+    {tipo:'passo',ghost:'04',titulo:'Passo 4: [ação]',corpo:'Descreva o que fazer neste passo, de forma clara.'},
+    {tipo:'cta',titulo:'Pronto! Agora é sua vez.',sub:'Salva pra não esquecer e me marca no resultado.',acao:'Salvar'}
+  ]},
+  {id:'caso-sucesso', nome:'Caso de Sucesso', desc:'Storytelling com resultado e número de destaque.', kit:'serif-classic', paleta:_PAL.ouro, formato:'4:5', slides:[
+    {tipo:'capa',ghost:'01',kicker:'HISTÓRIA REAL',titulo:'De [situação ruim] a [resultado]',sub:'Como [pessoa/marca] conseguiu — e você também pode.'},
+    {tipo:'passo',ghost:'01',titulo:'O ponto de partida',corpo:'Conte a dor inicial, o problema que existia antes.'},
+    {tipo:'passo',ghost:'02',titulo:'A virada',corpo:'Conte o que foi feito de diferente, a decisão-chave.'},
+    {tipo:'stat',numero:'+120%',rotulo:'de resultado',corpo:'Troque pelo número que prova o resultado.'},
+    {tipo:'cta',titulo:'Quer um resultado assim?',sub:'Chama na DM e bora conversar.',acao:'Chamar no direct'}
+  ]},
+  {id:'frases', nome:'Frases de Impacto', desc:'Citações fortes — alto compartilhamento.', kit:'editorial', paleta:_PAL.preto, formato:'4:5', slides:[
+    {tipo:'capa',ghost:'01',kicker:'PRA REFLETIR',titulo:'[Tema] em [N] frases',sub:'Guarde a que mais falar com você.'},
+    {tipo:'insight',texto:'"[Sua frase de impacto número 1 vai aqui]"',fonte:'— autor / sua marca'},
+    {tipo:'insight',texto:'"[Sua frase de impacto número 2 vai aqui]"',fonte:'— autor / sua marca'},
+    {tipo:'insight',texto:'"[Sua frase de impacto número 3 vai aqui]"',fonte:'— autor / sua marca'},
+    {tipo:'cta',titulo:'Qual te marcou mais?',sub:'Comenta aqui embaixo e salva o post.',acao:'Comentar'}
+  ]},
+  {id:'oferta', nome:'Oferta / Promoção', desc:'Apresenta um produto/serviço e chama pra ação.', kit:'playful', paleta:_PAL.rosa, formato:'4:5', slides:[
+    {tipo:'capa',ghost:'%',kicker:'CONDIÇÃO ESPECIAL',titulo:'[Nome da oferta]',sub:'Por tempo limitado. Aproveite.'},
+    {tipo:'lista',titulo:'O que você leva',itens:['Benefício 1 do seu produto','Benefício 2 do seu produto','Benefício 3 do seu produto','Bônus exclusivo']},
+    {tipo:'stat',numero:'-40%',rotulo:'só esta semana',corpo:'Destaque o desconto ou a vantagem principal.'},
+    {tipo:'passo',ghost:'01',titulo:'Pra quem é',corpo:'Diga em uma frase quem mais se beneficia disso.'},
+    {tipo:'cta',titulo:'Garanta o seu agora',sub:'Link na bio ou chama no direct.',acao:'Quero aproveitar'}
+  ]}
+];
+function applyModelo(m){
+  if(!confirm('Carregar o modelo "'+m.nome+'"?\n\nIsso substitui os slides atuais. Você pode desfazer com Ctrl+Z.')) return;
+  data.slides=JSON.parse(JSON.stringify(m.slides));
+  if(m.kit)data.kit=m.kit;
+  if(m.paleta)data.paleta=Object.assign({},m.paleta);
+  if(m.formato)data.formato=m.formato;
+  current=0;
+  renderAll(); saveSoon(); closeModeloModal();
+  toast('Modelo carregado: '+m.nome);
+}
+function renderModeloGrid(){
+  const g=document.getElementById('modeloGrid'); if(!g) return;
+  g.innerHTML='';
+  MODELOS.forEach(m=>{
+    const card=document.createElement('button');
+    card.type='button';
+    card.style.cssText='display:flex;flex-direction:column;gap:8px;background:#1b1b22;border:1px solid #34343f;border-radius:11px;padding:13px;cursor:pointer;text-align:left;color:#e7e7ee;';
+    card.innerHTML='<span style="display:flex;align-items:center;gap:9px">'
+      +'<span style="position:relative;width:34px;height:34px;border-radius:8px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:'+m.paleta.bg+';overflow:hidden">'
+      +'<span style="position:absolute;left:5px;bottom:5px;width:12px;height:12px;border-radius:50%;background:'+m.paleta.accent+'"></span>'
+      +'<span style="position:absolute;right:4px;top:3px;font-family:serif;font-weight:800;font-size:13px;color:'+m.paleta.fg+'">Aa</span></span>'
+      +'<b style="font-size:13.5px">'+esc(m.nome)+'</b></span>'
+      +'<span style="font-size:11.5px;opacity:.7;line-height:1.35">'+esc(m.desc)+'</span>'
+      +'<span style="font-size:11px;opacity:.5">'+m.slides.length+' slides</span>';
+    card.onclick=()=>applyModelo(m);
+    g.appendChild(card);
+  });
+}
+function openModeloModal(){ renderModeloGrid(); document.getElementById('modeloModal').classList.add('show'); }
+function closeModeloModal(){ document.getElementById('modeloModal').classList.remove('show'); }
+document.getElementById('modeloBtn').onclick=openModeloModal;
+document.getElementById('modeloClose').onclick=closeModeloModal;
+document.getElementById('modeloModal').addEventListener('click',e=>{if(e.target.id==='modeloModal')closeModeloModal();});
 
 document.getElementById('undoBtn').onclick=undo;
 document.getElementById('redoBtn').onclick=redo;
