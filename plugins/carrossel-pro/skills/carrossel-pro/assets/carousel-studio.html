@@ -323,6 +323,12 @@ input[type=range]{width:100%;accent-color:#6C5CE7;height:18px;cursor:pointer;}
     <div class="modal-body">
       <div class="hint" style="margin-bottom:14px">Clique num estilo para aplicar fonte + cores em todo o carrossel. Você pode ajustar tudo depois.</div>
       <div id="presetGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px">
+        <b style="font-size:13px;color:#cfcfd6">Meus estilos</b>
+        <button class="btn ghostbtn" id="presetSave" style="padding:6px 12px;font-size:12px">+ Salvar estilo atual</button>
+      </div>
+      <div id="userPresetGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"></div>
+      <div class="hint" id="userPresetEmpty" style="margin-top:6px">Você ainda não salvou nenhum estilo. Ajuste as cores e a fonte do seu jeito e clique em <b style="color:#9a8fe8">+ Salvar estilo atual</b>.</div>
     </div>
   </div>
 </div>
@@ -1290,27 +1296,57 @@ function applyPreset(p){
   saveSoon();
   toast('Estilo aplicado: '+p.nome);
 }
+function presetCard(p, opts){
+  opts=opts||{};
+  const on = (data.kit===p.kit && (data.paleta&&data.paleta.accent)===p.paleta.accent);
+  const card=document.createElement('div');
+  card.style.cssText='position:relative;display:flex;align-items:center;gap:11px;background:#1b1b22;border:1px solid '+(on?'#6C5CE7':'#34343f')+';border-radius:11px;padding:11px;cursor:pointer;text-align:left;color:#e7e7ee;';
+  card.innerHTML='<span style="position:relative;width:42px;height:42px;border-radius:9px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:'+p.paleta.bg+';overflow:hidden">'
+    +'<span style="position:absolute;left:6px;bottom:6px;width:14px;height:14px;border-radius:50%;background:'+p.paleta.accent+'"></span>'
+    +'<span style="position:absolute;right:6px;top:6px;font-family:serif;font-weight:800;font-size:15px;color:'+p.paleta.fg+'">Aa</span></span>'
+    +'<span style="min-width:0"><b style="display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(p.nome)+'</b>'
+    +'<span style="font-size:11px;opacity:.6">'+esc(p.kit)+'</span></span>';
+  card.onclick=()=>{ applyPreset(p); renderPresetGrid(); renderUserPresetGrid(); };
+  if(opts.del){
+    const x=document.createElement('button');
+    x.type='button'; x.textContent='×'; x.title='Apagar este estilo';
+    x.style.cssText='position:absolute;top:6px;right:6px;width:20px;height:20px;border-radius:50%;border:none;background:#33333d;color:#bbb;font-size:14px;line-height:1;cursor:pointer;';
+    x.onclick=(e)=>{ e.stopPropagation(); if(confirm('Apagar o estilo "'+p.nome+'"?')) deleteUserPreset(p.id); };
+    card.appendChild(x);
+  }
+  return card;
+}
 function renderPresetGrid(){
   const g=document.getElementById('presetGrid'); if(!g) return;
-  g.innerHTML='';
-  PRESETS.forEach(p=>{
-    const on = (data.kit===p.kit && (data.paleta&&data.paleta.accent)===p.paleta.accent);
-    const card=document.createElement('button');
-    card.type='button';
-    card.style.cssText='display:flex;align-items:center;gap:11px;background:#1b1b22;border:1px solid '+(on?'#6C5CE7':'#34343f')+';border-radius:11px;padding:11px;cursor:pointer;text-align:left;color:#e7e7ee;';
-    card.innerHTML='<span style="position:relative;width:42px;height:42px;border-radius:9px;flex:0 0 auto;border:1px solid rgba(255,255,255,.16);background:'+p.paleta.bg+';overflow:hidden">'
-      +'<span style="position:absolute;left:6px;bottom:6px;width:14px;height:14px;border-radius:50%;background:'+p.paleta.accent+'"></span>'
-      +'<span style="position:absolute;right:6px;top:6px;font-family:serif;font-weight:800;font-size:15px;color:'+p.paleta.fg+'">Aa</span></span>'
-      +'<span><b style="display:block;font-size:13px">'+p.nome+'</b>'
-      +'<span style="font-size:11px;opacity:.6">'+p.kit+'</span></span>';
-    card.onclick=()=>{ applyPreset(p); renderPresetGrid(); };
-    g.appendChild(card);
-  });
+  g.innerHTML=''; PRESETS.forEach(p=>g.appendChild(presetCard(p)));
 }
-function openPresetModal(){ renderPresetGrid(); document.getElementById('presetModal').classList.add('show'); }
+/* ----- Meus estilos: salvos pelo usuario, ficam neste navegador ----- */
+const USER_PRESETS_KEY='cs.userPresets';
+function loadUserPresets(){ try{ return JSON.parse(localStorage.getItem(USER_PRESETS_KEY)||'[]'); }catch(e){ return []; } }
+function saveUserPresets(arr){ try{ localStorage.setItem(USER_PRESETS_KEY, JSON.stringify(arr)); }catch(e){} }
+function renderUserPresetGrid(){
+  const g=document.getElementById('userPresetGrid'); if(!g) return;
+  const list=loadUserPresets();
+  g.innerHTML=''; list.forEach(p=>g.appendChild(presetCard(p,{del:true})));
+  const empty=document.getElementById('userPresetEmpty');
+  if(empty) empty.style.display = list.length ? 'none' : 'block';
+}
+function saveCurrentStyle(){
+  const nome=(prompt('Dê um nome ao seu estilo:','Minha marca')||'').trim();
+  if(!nome) return;
+  const list=loadUserPresets();
+  list.push({id:'user-'+Date.now(), nome:nome, kit:data.kit, paleta:Object.assign({}, data.paleta)});
+  saveUserPresets(list); renderUserPresetGrid(); toast('Estilo salvo: '+nome);
+}
+function deleteUserPreset(id){
+  saveUserPresets(loadUserPresets().filter(p=>p.id!==id));
+  renderUserPresetGrid(); toast('Estilo apagado');
+}
+function openPresetModal(){ renderPresetGrid(); renderUserPresetGrid(); document.getElementById('presetModal').classList.add('show'); }
 function closePresetModal(){ document.getElementById('presetModal').classList.remove('show'); }
 document.getElementById('presetBtn').onclick=openPresetModal;
 document.getElementById('presetClose').onclick=closePresetModal;
+document.getElementById('presetSave').onclick=saveCurrentStyle;
 document.getElementById('presetModal').addEventListener('click',e=>{if(e.target.id==='presetModal')closePresetModal();});
 
 document.getElementById('resetBtn').onclick=()=>{
