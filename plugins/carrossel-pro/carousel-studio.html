@@ -248,6 +248,7 @@ input[type=range]{width:100%;accent-color:#6C5CE7;height:18px;cursor:pointer;}
     <span class="swatch">Acento <input type="color" id="cAccent"></span>
     <span class="swatch">Fundo <input type="color" id="cBg"></span>
     <span class="swatch">Texto <input type="color" id="cFg"></span>
+    <button class="btn ghostbtn" id="autoFg" title="Ajusta o texto pra claro ou escuro conforme o fundo (sempre legível)" style="padding:6px 11px">Auto</button>
     <span class="swatch">Respiro <input type="color" id="cCream"></span>
     <span class="grow"></span>
     <span class="savestat" id="saveStat" title="As alterações são salvas automaticamente neste navegador"><span class="dot"></span><span id="saveStatTxt">Salvo</span></span>
@@ -1075,6 +1076,22 @@ $('#cAccent').addEventListener('input',e=>{data.paleta.accent=e.target.value;app
 $('#cBg').addEventListener('input',e=>{data.paleta.bg=e.target.value;applyPalette();renderMain();renderRail();});
 $('#cFg').addEventListener('input',e=>{data.paleta.fg=e.target.value;applyPalette();renderMain();renderRail();});
 $('#cCream').addEventListener('input',e=>{data.paleta.cream=e.target.value;applyPalette();renderMain();renderRail();});
+/* ===== Cor automatica do texto (contraste com o fundo) ===== */
+function _lumin(hex){
+  hex=String(hex||'').replace('#','');
+  if(hex.length===3) hex=hex.split('').map(c=>c+c).join('');
+  const r=parseInt(hex.slice(0,2),16)/255, g=parseInt(hex.slice(2,4),16)/255, b=parseInt(hex.slice(4,6),16)/255;
+  const f=c=>c<=0.03928?c/12.92:Math.pow((c+0.055)/1.055,2.4);
+  return 0.2126*f(r)+0.7152*f(g)+0.0722*f(b);
+}
+function autoTextColor(){
+  const fundoClaro=_lumin(data.paleta.bg)>0.42;
+  data.paleta.fg = fundoClaro ? '#171410' : '#F5F1E8';
+  data.paleta.muted = fundoClaro ? '#6E6357' : '#A9A29A';
+  applyPalette(); renderMain(); renderRail(); saveSoon();
+  toast(fundoClaro?'Texto escuro (fundo claro)':'Texto claro (fundo escuro)');
+}
+$('#autoFg').onclick=autoTextColor;
 $('#importBtn').onclick=()=>$('#fileIn').click();
 $('#fileIn').addEventListener('change',e=>{
   const f=e.target.files[0];if(!f)return;const r=new FileReader();
