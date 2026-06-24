@@ -608,6 +608,13 @@ function field(label,val,oninput,hint,textarea){
   const f=el('div','field');const id='f'+Math.random().toString(36).slice(2);
   f.innerHTML=`<label for="${id}">${label}</label>`+(textarea?`<textarea id="${id}"></textarea>`:`<input id="${id}" type="text">`)+(hint?`<div class="hint">${hint}</div>`:'');
   const inp=f.querySelector(textarea?'textarea':'input');inp.value=val==null?'':val;
+  if(textarea){
+    const soft=200;
+    const cnt=el('div','hint');cnt.style.cssText='text-align:right;margin-top:3px;font-variant-numeric:tabular-nums;';
+    const upd=()=>{const n=inp.value.length;cnt.textContent=n+' caracteres'+(n>soft?' — pode estourar o slide':'');cnt.style.color=n>soft?'#e08a3c':'';};
+    upd();inp.addEventListener('input',()=>{oninput(inp.value);upd();});f.appendChild(cnt);
+    return f;
+  }
   inp.addEventListener('input',()=>oninput(inp.value));return f;
 }
 function glabel(text){const d=el('div','glabel');d.innerHTML=`<span>${text}</span>`;return d;}
